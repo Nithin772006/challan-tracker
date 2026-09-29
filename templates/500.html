@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}System Error - Smart Traffic Violation Logger{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width: 540px; padding-top: 40px;">
+  <div class="card" style="text-align: center; padding: 40px 30px; box-shadow: var(--shadow-elevated);">
+    <div style="width: 60px; height: 60px; border-radius: 16px; background: rgba(217, 119, 6, 0.12); color: var(--color-warning); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <h1 class="page-title" style="font-size: 24px; margin-bottom: 6px;">Internal System Error</h1>
+    <p class="page-subtitle" style="margin-bottom: 24px;">
+      An unexpected error occurred while processing your traffic enforcement request. Our system operators have been notified.
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 12px;">
+      <a href="{{ url_for('dashboard') if session.get('officer_id') else url_for('public_search') }}" class="btn-primary">
+        Return to Safety
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

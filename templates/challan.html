@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Digital Challan Receipt - {{ violation.challan_number }}{% endblock %}
+
+{% block content %}
+<div class="page-container" style="padding-top: 16px;">
+  <!-- Print and Back Action Bar (Hidden when printing) -->
+  <div class="no-print" style="max-width: 780px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center;">
+    <a href="{{ url_for('violation_detail', id=violation.id) }}" class="btn-secondary btn-sm">
+      &larr; Back to Violation Details
+    </a>
+    <div style="display: flex; gap: 10px;">
+      <button type="button" class="btn-primary js-print-trigger">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"/>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <rect width="12" height="8" x="6" y="14"/>
+        </svg>
+        Print Challan
+      </button>
+    </div>
+  </div>
+
+  <!-- Official Digital Challan Container (design.md Section 16) -->
+  <div class="challan-container" id="printableChallan">
+    <!-- Challan Header -->
+    <div class="challan-header">
+      <div class="challan-brand">
+        <div class="challan-emblem">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="challan-title-block">
+          <h2>DEPARTMENT OF TRAFFIC ENFORCEMENT</h2>
+          <p>E-Challan &amp; Statutory Violation Notice &bull; Motor Vehicles Act</p>
+        </div>
+      </div>
+      <div class="challan-receipt-badge">
+        <div class="section-eyebrow">CHALLAN IDENTIFIER</div>
+        <div class="font-mono" style="font-size: 16px; font-weight: 800; color: var(--eb-forest); margin-top: 2px;">
+          {{ violation.challan_number }}
+        </div>
+        <div style="margin-top: 6px;">
+          {% if violation.is_paid %}
+            <span class="badge badge--paid">
+              <span class="badge-dot"></span> Fine Settled / Paid
+            </span>
+          {% else %}
+            <span class="badge badge--unpaid">
+              <span class="badge-dot"></span> Fine Due / Unpaid
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Challan Grid (Details + QR) -->
+    <div class="challan-grid">
+      <div>
+        <table class="challan-details-table">
+          <tbody>
+            <tr>
+              <td class="detail-label">Vehicle Registration</td>
+              <td class="detail-value">
+                <span class="vehicle-plate" style="font-size: 15px;">{{ violation.vehicle_number }}</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="detail-label">Offense Recorded</td>
+              <td class="detail-value" style="color: var(--eb-forest); font-size: 15px;">
+                {{ violation.violation_type }}
+              </td>
+            </tr>
+            <tr>
+              <td class="detail-label">Incident Location</td>
+              <td class="detail-value">{{ violation.location }}</td>
+            </tr>
+            <tr>
+              <td class="detail-label">Date &amp; Time</td>
+              <td class="detail-value">{{ violation.formatted_date }}</td>
+            </tr>
+            <tr>
+              <td class="detail-label">Issuing Authority</td>
+              <td class="detail-value">{{ violation.officer_name or 'Enforcement Officer' }} (ID: {{ violation.officer_badge or 'HQ-POLICE' }})</td>
+            </tr>
+            {% if violation.notes %}
+            <tr>
+              <td class="detail-label">Remarks</td>
+              <td class="detail-value" style="font-size: 12px; color: var(--eb-text-muted);">{{ violation.notes }}</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- QR Code Box -->
+      <div class="challan-qr-box">
+        {% if violation.qr_filename %}
+          <img 
+            src="{{ url_for('static', filename='qr/' + violation.qr_filename) }}" 
+            alt="Scan QR for Challan {{ violation.challan_number }}" 
+            class="challan-qr-image"
+          >
+        {% endif %}
+        <div class="challan-qr-caption">Scan to Verify or Pay</div>
+        <div style="font-size: 10px; color: var(--eb-text-subtle); margin-top: 4px;">Public Portal Verification</div>
+      </div>
+    </div>
+
+    <!-- Fine Total Settlement Bar -->
+    <div class="challan-total-bar">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--eb-text-muted);">Total Compound Fine Payable</div>
+        <div style="font-size: 11px; color: var(--eb-text-subtle);">Inclusive of applicable administrative surcharges</div>
+      </div>
+      <div class="font-mono" style="font-size: 26px; font-weight: 900; color: var(--eb-deep-forest);">
+        {{ violation.formatted_amount }}
+      </div>
+    </div>
+
+    <!-- Official Footer Notes -->
+    <div class="challan-footer-notes">
+      <p><strong>Notice to Violator:</strong> Please settle outstanding fines within 15 calendar days from the date of issuance to avoid legal prosecution or vehicle impoundment under Section 133 of the Motor Vehicles Act.</p>
+      <p style="margin-top: 6px;">This document is a computer-generated digital legal record and does not require an ink signature. To verify the cryptographic authenticity of this challan, scan the QR code above or visit the official portal at <code>{{ public_url }}</code>.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

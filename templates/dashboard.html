@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Traffic Violation Logger{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-info">
+      <h1 class="page-title">Enforcement Dashboard</h1>
+      <p class="page-subtitle">Real-time surveillance overview, digital challan metrics, and collection performance.</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('add_violation') }}" class="btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        + Record New Violation
+      </a>
+      <a href="{{ url_for('violations') }}" class="btn-secondary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        View All History
+      </a>
+    </div>
+  </div>
+
+  <!-- 4-Column Stat Cards (design.md Section 6.3) -->
+  <div class="stats-grid">
+    <!-- Stat 1: Total Violations -->
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <span class="stat-label">TOTAL VIOLATIONS</span>
+        <div class="stat-card-icon stat-card-icon--emerald">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{{ total_violations }}</div>
+        <div class="stat-sub">Recorded across all zones</div>
+      </div>
+    </div>
+
+    <!-- Stat 2: Paid Fines -->
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <span class="stat-label">PAID REVENUE</span>
+        <div class="stat-card-icon stat-card-icon--green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">₹{{ "{:,.2f}".format(paid_amount) }}</div>
+        <div class="stat-sub">{{ paid_count }} challans cleared</div>
+      </div>
+    </div>
+
+    <!-- Stat 3: Unpaid Fines -->
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <span class="stat-label">PENDING / UNPAID</span>
+        <div class="stat-card-icon stat-card-icon--red">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value" style="color: var(--color-danger);">₹{{ "{:,.2f}".format(unpaid_amount) }}</div>
+        <div class="stat-sub">{{ unpaid_count }} pending recovery</div>
+      </div>
+    </div>
+
+    <!-- Stat 4: Today's Violations -->
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <span class="stat-label">TODAY'S LOGS</span>
+        <div class="stat-card-icon stat-card-icon--blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{{ today_violations }}</div>
+        <div class="stat-sub">Logged in current shift</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Intelligence Banner (design.md Section 6.4) -->
+  <div class="eb-ai-banner">
+    <div class="eb-ai-banner-left">
+      <div class="eb-ai-banner-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+        </svg>
+      </div>
+      <span class="eb-ai-banner-label">Enforcement AI Summary</span>
+    </div>
+    <div class="eb-ai-banner-center">
+      <span class="eb-ai-banner-badge">
+        {% if unpaid_count > 0 %}Attention Required{% else %}Optimal Compliance{% endif %}
+      </span>
+      <p class="eb-ai-banner-desc">
+        {% if unpaid_count > 0 %}
+          <strong>{{ unpaid_count }} unpaid challans</strong> pending collection totaling <strong>₹{{ "{:,.2f}".format(unpaid_amount) }}</strong>. Fast QR payment links are active for citizen instant checkout.
+        {% else %}
+          100% fine clearance rate achieved across current recorded traffic offenses.
+        {% endif %}
+      </p>
+    </div>
+    <div class="eb-ai-banner-right">
+      <div class="eb-ai-forecast-block">
+        <span class="eb-ai-forecast-label">Total Fine Value</span>
+        <span class="eb-ai-forecast-value">₹{{ "{:,.2f}".format(total_amount) }}</span>
+      </div>
+      <a href="{{ url_for('violations', status='Unpaid') }}" class="btn-primary btn-sm">Review Unpaid</a>
+    </div>
+  </div>
+
+  <!-- Quick Vehicle Search Box -->
+  <div class="search-filter-card">
+    <form action="{{ url_for('violations') }}" method="GET" class="search-filter-form">
+      <div class="search-field">
+        <label for="quick_vehicle" style="display: block; font-size: 12px; font-weight: 700; color: var(--eb-forest); margin-bottom: 6px; text-transform: uppercase;">
+          Quick Vehicle Lookup
+        </label>
+        <div style="position: relative;">
+          <input type="text" id="quick_vehicle" name="vehicle" placeholder="Enter Registration No (e.g. TN38AB1234)" style="text-transform: uppercase; padding-left: 36px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 12px; color: var(--eb-text-subtle);">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+      </div>
+      <div>
+        <button type="submit" class="btn-primary" style="height: 42px;">
+          Search History
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Recent Violations Table -->
+  <div class="card">
+    <div class="card-header-bar">
+      <div>
+        <h3 class="card-header-title">Recent Traffic Violations</h3>
+        <p style="font-size: 12px; color: var(--eb-text-subtle); margin-top: 2px;">Latest incidents recorded by field officers</p>
+      </div>
+      <a href="{{ url_for('violations') }}" class="btn-secondary btn-sm">View Full History &rarr;</a>
+    </div>
+
+    {% if recent_violations %}
+      <div class="table-responsive">
+        <table class="eb-table">
+          <thead>
+            <tr>
+              <th>Challan No.</th>
+              <th>Vehicle Number</th>
+              <th>Violation</th>
+              <th>Location</th>
+              <th>Date &amp; Time</th>
+              <th>Fine Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in recent_violations %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('violation_detail', id=v.id) }}" style="font-weight: 700; color: var(--eb-forest); text-decoration: none;">
+                    {{ v.challan_number }}
+                  </a>
+                </td>
+                <td>
+                  <span class="vehicle-plate">{{ v.vehicle_number }}</span>
+                </td>
+                <td>
+                  <strong>{{ v.violation_type }}</strong>
+                </td>
+                <td style="color: var(--eb-text-muted);">
+                  {{ v.location }}
+                </td>
+                <td style="color: var(--eb-text-subtle); font-size: 12.5px;">
+                  {{ v.formatted_date }}
+                </td>
+                <td style="font-weight: 800; color: var(--eb-deep-forest);">
+                  {{ v.formatted_amount }}
+                </td>
+                <td>
+                  {% if v.is_paid %}
+                    <span class="badge badge--paid">
+                      <span class="badge-dot"></span> Paid
+                    </span>
+                  {% else %}
+                    <span class="badge badge--unpaid">
+                      <span class="badge-dot"></span> Unpaid
+                    </span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <a href="{{ url_for('violation_detail', id=v.id) }}" class="btn-secondary btn-sm" title="View Details">
+                      View
+                    </a>
+                    <a href="{{ url_for('challan_view', id=v.id) }}" class="btn-secondary btn-sm" title="Digital Challan">
+                      Challan
+                    </a>
+                    {% if not v.is_paid %}
+                      <form action="{{ url_for('mark_paid', id=v.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn-primary btn-sm" style="background: linear-gradient(135deg, var(--eb-mint) 0%, var(--eb-emerald) 100%);" title="Mark as Paid">
+                          Mark Paid
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h4 class="empty-state-title">No Violations Logged Yet</h4>
+        <p class="empty-state-desc">Start by recording your first traffic offense or seeding the database with demo entries.</p>
+        <a href="{{ url_for('add_violation') }}" class="btn-primary btn-sm">+ Log First Violation</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

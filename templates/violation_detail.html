@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Violation {{ violation.challan_number }} - Smart Traffic Violation Logger{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-info">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+        <h1 class="page-title">{{ violation.challan_number }}</h1>
+        {% if violation.is_paid %}
+          <span class="badge badge--paid">
+            <span class="badge-dot"></span> Paid
+          </span>
+        {% else %}
+          <span class="badge badge--unpaid">
+            <span class="badge-dot"></span> Unpaid
+          </span>
+        {% endif %}
+      </div>
+      <p class="page-subtitle">Detailed violation dossier and cryptographic verification record.</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="page-header-actions">
+      <a href="{{ url_for('violations') }}" class="btn-secondary">
+        &larr; Back to History
+      </a>
+      <a href="{{ url_for('challan_view', id=violation.id) }}" class="btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"/>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <rect width="12" height="8" x="6" y="14"/>
+        </svg>
+        Print / Digital Challan
+      </a>
+      {% if not violation.is_paid %}
+        <form action="{{ url_for('mark_paid', id=violation.id) }}" method="POST" style="display: inline;">
+          <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, var(--eb-mint) 0%, var(--eb-emerald) 100%);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Mark as Paid
+          </button>
+        </form>
+      {% endif %}
+      <a href="{{ url_for('edit_violation', id=violation.id) }}" class="btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        Edit
+      </a>
+      <button type="button" class="btn-danger js-delete-violation" data-id="{{ violation.id }}" data-challan="{{ violation.challan_number }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18"/>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+        </svg>
+        Delete
+      </button>
+    </div>
+  </div>
+
+  <!-- Detail Content Grid -->
+  <div class="charts-row">
+    <!-- Left: Detailed Information Card -->
+    <div class="card">
+      <div class="card-header-bar">
+        <h3 class="card-header-title">Violation Incident Particulars</h3>
+        <span class="section-eyebrow">REGISTRATION &bull; {{ violation.created_at.strftime('%Y-%m-%d') }}</span>
+      </div>
+
+      <table class="challan-details-table">
+        <tbody>
+          <tr>
+            <td class="detail-label">Challan Number</td>
+            <td class="detail-value font-mono" style="font-size: 15px; color: var(--eb-forest);">{{ violation.challan_number }}</td>
+          </tr>
+          <tr>
+            <td class="detail-label">Vehicle Registration</td>
+            <td class="detail-value">
+              <span class="vehicle-plate" style="font-size: 14px;">{{ violation.vehicle_number }}</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="detail-label">Violation Offense</td>
+            <td class="detail-value" style="font-size: 15px; font-weight: 700; color: var(--eb-forest);">{{ violation.violation_type }}</td>
+          </tr>
+          <tr>
+            <td class="detail-label">Incident Location</td>
+            <td class="detail-value">{{ violation.location }}</td>
+          </tr>
+          <tr>
+            <td class="detail-label">Offense Date &amp; Time</td>
+            <td class="detail-value">{{ violation.formatted_date }}</td>
+          </tr>
+          <tr>
+            <td class="detail-label">Statutory Fine Amount</td>
+            <td class="detail-value font-mono" style="font-size: 18px; color: var(--eb-deep-forest);">{{ violation.formatted_amount }}</td>
+          </tr>
+          <tr>
+            <td class="detail-label">Current Payment Status</td>
+            <td class="detail-value">
+              {% if violation.is_paid %}
+                <span class="badge badge--paid">
+                  <span class="badge-dot"></span> Paid &bull; Cleared
+                </span>
+              {% else %}
+                <span class="badge badge--unpaid">
+                  <span class="badge-dot"></span> Unpaid &bull; Pending Payment
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="detail-label">Logging Officer</td>
+            <td class="detail-value">{{ violation.officer_name or 'Traffic Enforcement Officer' }} {% if violation.officer_badge %}(Badge: {{ violation.officer_badge }}){% endif %}</td>
+          </tr>
+          <tr>
+            <td class="detail-label">Observational Notes</td>
+            <td class="detail-value" style="font-style: italic; color: var(--eb-text-muted);">
+              {{ violation.notes or 'No supplementary notes recorded.' }}
+            </td>
+          </tr>
+          <tr>
+            <td class="detail-label">System Timestamp</td>
+            <td class="detail-value" style="font-size: 12px; color: var(--eb-text-subtle);">
+              Created: {{ violation.created_at.strftime('%d %b %Y, %I:%M %p') }} &bull; Updated: {{ violation.updated_at.strftime('%d %b %Y, %I:%M %p') }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Right: QR Code & Verification Block -->
+    <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+      <h3 class="card-header-title" style="margin-bottom: 6px;">Digital QR Authenticator</h3>
+      <p style="font-size: 12px; color: var(--eb-text-subtle); margin-bottom: 16px;">
+        Scan this QR code with any smartphone camera to inspect the official public fine status.
+      </p>
+
+      {% if violation.qr_filename %}
+        <div style="padding: 12px; background: #ffffff; border: 1.5px solid var(--eb-card-border); border-radius: 14px; box-shadow: var(--shadow-sm); margin-bottom: 14px;">
+          <img src="{{ url_for('static', filename='qr/' + violation.qr_filename) }}" alt="QR Code for Challan {{ violation.challan_number }}" style="width: 180px; height: 180px; display: block;">
+        </div>
+      {% endif %}
+
+      <div style="font-size: 12px; color: var(--eb-forest); font-weight: 600; margin-bottom: 16px;">
+        Direct Public URL:
+        <br>
+        <a href="{{ public_url }}" target="_blank" style="color: var(--eb-emerald); word-break: break-all; font-size: 11.5px;">
+          {{ public_url }} &nearr;
+        </a>
+      </div>
+
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <a href="{{ public_url }}" target="_blank" class="btn-secondary btn-sm" style="flex: 1;">
+          Test Public Page
+        </a>
+        <a href="{{ url_for('static', filename='qr/' + violation.qr_filename) }}" download="{{ violation.challan_number }}_QR.png" class="btn-primary btn-sm" style="flex: 1;">
+          Download QR
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

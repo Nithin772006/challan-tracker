@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Citizen Fine Verification - Smart Traffic Violation Logger{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width: 860px;">
+  <!-- Public Hero Banner -->
+  <div style="text-align: center; margin-bottom: 32px; padding: 20px 0;">
+    <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--eb-sage-pale); color: var(--eb-forest); font-size: 11.5px; font-weight: 700; padding: 4px 12px; border-radius: var(--eb-radius-pill); border: 1px solid rgba(82,183,136,0.35); margin-bottom: 12px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      CITIZEN E-ENFORCEMENT PORTAL
+    </div>
+    <h1 class="page-title" style="font-size: 32px;">Check &amp; Pay Traffic Challans</h1>
+    <p class="page-subtitle" style="font-size: 15px; max-width: 520px; margin: 8px auto 0;">
+      Instant lookup for traffic violations recorded against your vehicle number or digital challan reference.
+    </p>
+  </div>
+
+  <!-- Search Card -->
+  <div class="card" style="box-shadow: var(--shadow-elevated); margin-bottom: 28px;">
+    <form method="GET" action="{{ url_for('public_search') }}">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <div style="flex: 3; min-width: 260px;">
+          <label for="query" style="display: block; font-size: 12px; font-weight: 700; color: var(--eb-forest); margin-bottom: 6px; text-transform: uppercase;">
+            Vehicle Number or Challan ID
+          </label>
+          <input 
+            type="text" 
+            id="query" 
+            name="q" 
+            value="{{ search_query }}" 
+            placeholder="e.g. TN38AB1234 or TVL-2026-000001" 
+            required 
+            style="text-transform: uppercase; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; height: 44px;"
+          >
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+          <button type="submit" class="btn-primary btn-lg" style="height: 44px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Verify Challan
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Results Section -->
+  {% if searched %}
+    {% if results %}
+      <!-- Summary Strip -->
+      <div class="vehicle-summary-strip">
+        <div class="summary-strip-item">
+          <span class="summary-strip-label">Lookup Target</span>
+          <span class="vehicle-plate" style="font-size: 14px; margin-top: 4px; width: fit-content;">{{ search_query }}</span>
+        </div>
+        <div class="summary-strip-item">
+          <span class="summary-strip-label">Found Records</span>
+          <span class="summary-strip-value">{{ results|length }}</span>
+        </div>
+        <div class="summary-strip-item">
+          <span class="summary-strip-label">Unpaid Fines</span>
+          <span class="summary-strip-value" style="color: var(--color-danger);">
+            {{ unpaid_count }} (₹{{ "{:,.2f}".format(unpaid_total) }})
+          </span>
+        </div>
+        <div class="summary-strip-item">
+          <span class="summary-strip-label">Cleared Fines</span>
+          <span class="summary-strip-value" style="color: var(--color-success);">
+            {{ paid_count }} (₹{{ "{:,.2f}".format(paid_total) }})
+          </span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header-bar">
+          <h3 class="card-header-title">Violations Under Record</h3>
+          <span class="section-eyebrow">OFFICIAL ENFORCEMENT LEDGER</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="eb-table">
+            <thead>
+              <tr>
+                <th>Challan No.</th>
+                <th>Vehicle</th>
+                <th>Violation</th>
+                <th>Location</th>
+                <th>Date</th>
+                <th>Fine Amount</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in results %}
+                <tr>
+                  <td>
+                    <span class="font-mono" style="font-weight: 700; color: var(--eb-forest);">{{ v.challan_number }}</span>
+                  </td>
+                  <td>
+                    <span class="vehicle-plate">{{ v.vehicle_number }}</span>
+                  </td>
+                  <td><strong>{{ v.violation_type }}</strong></td>
+                  <td style="color: var(--eb-text-muted);">{{ v.location }}</td>
+                  <td style="color: var(--eb-text-subtle); font-size: 12.5px;">{{ v.formatted_date }}</td>
+                  <td style="font-weight: 800; color: var(--eb-deep-forest);">{{ v.formatted_amount }}</td>
+                  <td>
+                    {% if v.is_paid %}
+                      <span class="badge badge--paid">
+                        <span class="badge-dot"></span> Paid
+                      </span>
+                    {% else %}
+                      <span class="badge badge--unpaid">
+                        <span class="badge-dot"></span> Unpaid
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{{ url_for('public_challan', challan_number=v.challan_number) }}" class="btn-primary btn-sm">
+                      {% if v.is_paid %}View Receipt{% else %}Pay / Verify &rarr;{% endif %}
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <div class="empty-state card">
+        <div class="empty-state-icon" style="background: var(--bg-success); color: var(--color-success);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <h4 class="empty-state-title">No Outstanding Violations Found!</h4>
+        <p class="empty-state-desc">
+          No active or pending traffic violations were found matching <strong class="font-mono">{{ search_query }}</strong>.
+        </p>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

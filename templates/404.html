@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Record Not Found - Smart Traffic Violation Logger{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width: 540px; padding-top: 40px;">
+  <div class="card" style="text-align: center; padding: 40px 30px; box-shadow: var(--shadow-elevated);">
+    <div style="width: 60px; height: 60px; border-radius: 16px; background: rgba(220, 38, 38, 0.12); color: var(--color-danger); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+    </div>
+    <h1 class="page-title" style="font-size: 24px; margin-bottom: 6px;">Challan / Record Not Found</h1>
+    <p class="page-subtitle" style="margin-bottom: 24px;">
+      The requested challan identifier or page could not be located in our traffic enforcement ledger. Please verify the challan number or QR code.
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 12px;">
+      <a href="{{ url_for('public_search') }}" class="btn-primary">
+        Citizen Search Portal
+      </a>
+      {% if session.get('officer_id') %}
+        <a href="{{ url_for('dashboard') }}" class="btn-secondary">
+          Officer Dashboard
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
