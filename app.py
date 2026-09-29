@@ -532,6 +532,7 @@ def create_app(config_class=Config):
     # Auto-initialize database and default officer account
     with app.app_context():
         db.create_all()
+        print(f"[DATABASE] Connected to: {app.config.get('DB_ENGINE', app.config['SQLALCHEMY_DATABASE_URI'])}")
         # Seed default officer if none exists
         if Officer.query.count() == 0:
             default_officer = Officer(

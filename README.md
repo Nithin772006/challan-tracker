@@ -84,7 +84,7 @@ The user interface follows the **3D Organic Modernist Green FinTech** specificat
 | Layer | Technologies |
 | :--- | :--- |
 | **Backend** | Python 3.13, Flask 3.0.3, Jinja2 |
-| **ORM & Database** | Flask-SQLAlchemy 3.1.1, SQLite 3 |
+| **ORM & Database** | Flask-SQLAlchemy 3.1.1, PostgreSQL (via `psycopg2-binary`) & SQLite fallback |
 | **Security** | Werkzeug password hashing, secure session management |
 | **QR Engine** | Python `qrcode` 8.2, Pillow 12.3.0 |
 | **Frontend** | HTML5 Semantic, Vanilla CSS3 (3D Green FinTech tokens from `design.md`), JavaScript ES6 |
@@ -157,13 +157,29 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Seed Database (Optional but Recommended)
+### 4. Configure PostgreSQL
+Set your credentials in `.env` or set `DATABASE_URL`:
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=traffic_logger
+```
+
+Initialize your PostgreSQL database and schema:
+```bash
+python init_postgres.py
+```
+*(Note: If PostgreSQL is not yet running on port 5432, the application automatically uses local `database.db` so you can continue developing without disruption.)*
+
+### 5. Seed Database (Optional but Recommended)
 Populates demo vehicles (`TN38AB1234`, `TN59CD5678`, `TN37EF9012`, etc.) and generates QR codes:
 ```bash
 python seed.py
 ```
 
-### 5. Run the Application
+### 6. Run the Application
 ```bash
 python app.py
 ```
