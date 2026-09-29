@@ -1,12 +1,9 @@
 """
-PostgreSQL Database Initializer for Smart Traffic Violation Logger.
-Creates the database if it doesn't exist, initializes all tables,
-and seeds initial officer credentials and sample violations.
+Database Initializer for Smart Traffic Violation Logger (Supabase / PostgreSQL).
+Initializes schema tables and seeds initial officer credentials and sample violations.
 """
 
 import os
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from config import Config
 from app import create_app
 from models import db, Officer, Violation
@@ -15,54 +12,20 @@ from qr_utils import generate_qr_code
 from flask import url_for
 from datetime import datetime, timedelta
 
-def setup_postgres():
-    pg_user = Config.PG_USER
-    pg_password = Config.PG_PASSWORD
-    pg_host = Config.PG_HOST
-    pg_port = Config.PG_PORT
-    target_db = Config.PG_DB
-
-    print(f"Connecting to PostgreSQL server at {pg_host}:{pg_port} as user '{pg_user}'...")
-
-    try:
-        # Connect to default 'postgres' database to check/create target database
-        conn = psycopg2.connect(
-            user=pg_user,
-            password=pg_password,
-            host=pg_host,
-            port=pg_port,
-            dbname='postgres'
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cur = conn.cursor()
-
-        # Check if database exists
-        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s;", (target_db,))
-        exists = cur.fetchone()
-
-        if not exists:
-            print(f"Database '{target_db}' does not exist. Creating database...")
-            cur.execute(f'CREATE DATABASE "{target_db}";')
-            print(f"[OK] Database '{target_db}' created successfully.")
-        else:
-            print(f"[OK] Database '{target_db}' already exists.")
-
-        cur.close()
-        conn.close()
-
-    except Exception as e:
-        print(f"[ERROR] Could not connect to PostgreSQL server: {e}")
-        print("\nPlease ensure:")
-        print("1. PostgreSQL service is started.")
-        print("2. Credentials in .env (or config.py) match your PostgreSQL configuration.")
-        return False
-
-    # Now initialize tables and seed via Flask application context
+def setup_database():
     app = create_app()
+
+    print(f"Connecting to Database engine: {app.config.get('DB_ENGINE', 'PostgreSQL')}...")
+
     with app.app_context():
-        print("Creating database schema tables in PostgreSQL...")
-        db.create_all()
-        print("[OK] Schema tables initialized successfully.")
+        try:
+            print("Creating database schema tables in Supabase / PostgreSQL...")
+            db.create_all()
+            print("[OK] Schema tables initialized successfully.")
+        except Exception as e:
+            print(f"[ERROR] Failed to initialize database tables: {e}")
+            print("\nPlease check your DATABASE_URL in .env.")
+            return False
 
         # Seed Officer
         if Officer.query.count() == 0:
@@ -75,6 +38,8 @@ def setup_postgres():
             db.session.add(officer)
             db.session.commit()
             print("[OK] Created default officer: 'officer1' / 'password123'")
+        else:
+            print("[INFO] Officer account already exists.")
 
         # Seed sample violations
         if Violation.query.count() == 0:
@@ -106,6 +71,15 @@ def setup_postgres():
                     "fine_amount": 10000.0,
                     "payment_status": "Unpaid",
                     "notes": "Breathalyzer reading 64mg/100ml. Vehicle impounded temporarily."
+                },
+                {
+                    "vehicle_number": "TN37EF9012",
+                    "violation_type": "Wrong Parking",
+                    "location": "RS Puram Commercial Zone",
+                    "violation_date": datetime.now() - timedelta(days=1),
+                    "fine_amount": 500.0,
+                    "payment_status": "Unpaid",
+                    "notes": "Blocking emergency fire hydrant lane."
                 }
             ]
 
@@ -131,9 +105,11 @@ def setup_postgres():
                     db.session.add(v)
                     db.session.commit()
                     print(f"[OK] Seeded Challan {challan_num} for vehicle {item['vehicle_number']}")
+        else:
+            print(f"[INFO] Database already contains {Violation.query.count()} violations.")
 
-    print("\n[SUCCESS] PostgreSQL setup and initialization complete!")
+    print("\n[SUCCESS] Supabase / PostgreSQL database setup and initialization complete!")
     return True
 
 if __name__ == '__main__':
-    setup_postgres()
+    setup_database()
