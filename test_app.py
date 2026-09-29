@@ -12,10 +12,19 @@ class SmartTrafficLoggerTestCase(unittest.TestCase):
         self.client = self.app.test_client()
 
         with self.app.app_context():
-            # Ensure tables exist
             db.create_all()
+            # Ensure an active test officer exists for authenticated tests
+            if not Officer.query.filter_by(username='test_officer').first():
+                test_off = Officer(
+                    username='test_officer',
+                    badge_number='TP-TEST-01',
+                    full_name='Test Officer'
+                )
+                test_off.set_password('TestSecurePassword123!')
+                db.session.add(test_off)
+                db.session.commit()
 
-    def login(self, username='officer1', password='password123'):
+    def login(self, username='test_officer', password='TestSecurePassword123!'):
         return self.client.post('/login', data={
             'username': username,
             'password': password
@@ -47,16 +56,40 @@ class SmartTrafficLoggerTestCase(unittest.TestCase):
             self.assertEqual(res.status_code, 302)
             self.assertIn('/login', res.headers['Location'])
 
-    def test_03_login_validation(self):
-        """Check login success and invalid login rejection."""
-        # Invalid credentials
-        res = self.login('officer1', 'wrongpass')
-        self.assertIn(b'Invalid credentials', res.data)
+    def test_03_officer_registration_and_login(self):
+        """Test registering a new officer and logging in."""
+        import random
+        rand_suffix = random.randint(1000, 9999)
+        reg_username = f"officer_{rand_suffix}"
+        reg_badge = f"TP-{rand_suffix}"
 
-        # Valid credentials
-        res = self.login('officer1', 'password123')
+        # Test registration
+        res = self.client.post('/register', data={
+            'full_name': f'Officer Test {rand_suffix}',
+            'badge_number': reg_badge,
+            'username': reg_username,
+            'password': 'StrongPassword2026!',
+            'confirm_password': 'StrongPassword2026!'
+        }, follow_redirects=True)
+
         self.assertEqual(res.status_code, 200)
-        self.assertIn(b'Enforcement Dashboard', res.data)
+        self.assertIn(b'Officer account successfully created', res.data)
+
+        # Test login with newly registered username
+        res_login = self.login(username=reg_username, password='StrongPassword2026!')
+        self.assertEqual(res_login.status_code, 200)
+        self.assertIn(b'Enforcement Dashboard', res_login.data)
+
+        # Test login with badge number instead of username
+        self.logout()
+        res_badge_login = self.login(username=reg_badge, password='StrongPassword2026!')
+        self.assertEqual(res_badge_login.status_code, 200)
+        self.assertIn(b'Enforcement Dashboard', res_badge_login.data)
+
+        # Invalid password rejected
+        self.logout()
+        res_fail = self.login(username=reg_username, password='wrong_password')
+        self.assertIn(b'Invalid credentials', res_fail.data)
 
     def test_04_dashboard_metrics(self):
         """Dashboard must show metrics and KPI cards."""
@@ -110,7 +143,7 @@ class SmartTrafficLoggerTestCase(unittest.TestCase):
         self.assertIn(b'Digital QR Authenticator', res.data)
         self.assertIn(b'Unpaid', res.data)
 
-        # Verify DB entry
+        # Verify entry in Supabase
         with self.app.app_context():
             v = Violation.query.filter_by(vehicle_number=unique_vehicle).first()
             self.assertIsNotNone(v)

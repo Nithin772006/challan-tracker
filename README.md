@@ -188,15 +188,26 @@ Open your browser and navigate to:
 
 ---
 
-## 🔑 Default Officer Credentials
+## 🔑 Officer Authentication & Registration
 
-| Role | Username | Password | Badge Number | Full Name |
-| :--- | :--- | :--- | :--- | :--- |
-| **Traffic Officer** | `officer1` | `password123` | `TP-8492` | Officer R. Sharma |
+The application uses real database authentication with **Werkzeug password hashing** and strictly enforces uniqueness on both username and badge number in Supabase.
 
-*(Auto-seeded on first run if database is empty)*
+### 1. Register via Web Interface
+Navigate to **`/register`** (or click **"Register"** in the top navigation bar) to register an official account with:
+- Officer Full Name
+- Official Badge Number (e.g. `TP-9901`)
+- Login Username
+- Secure Password (min 6 characters)
 
----
+### 2. Register via Command Line (CLI)
+You can also create officers directly via the included administrative CLI script:
+```bash
+python create_officer.py --username r_sharma --badge TP-8492 --name "Officer R. Sharma" --password "YourStrongPassword123!"
+```
+Or run interactively:
+```bash
+python create_officer.py
+```
 
 ## 🧪 Testing the Application
 

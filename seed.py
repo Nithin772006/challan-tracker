@@ -12,18 +12,13 @@ def seed_database():
         # Ensure tables
         db.create_all()
 
-        # Check or create officer
-        officer = Officer.query.filter_by(username='officer1').first()
+        # Find existing registered officer
+        officer = Officer.query.first()
         if not officer:
-            officer = Officer(
-                username='officer1',
-                full_name='Officer R. Sharma',
-                badge_number='TP-8492'
-            )
-            officer.set_password('password123')
-            db.session.add(officer)
-            db.session.commit()
-            print("[OK] Created officer: officer1 (password: password123)")
+            print("[NOTICE] No officer found in database. Please register an officer first at /register or run:")
+            print("  python create_officer.py")
+            return
+        print(f"[OK] Linking violations to registered officer: {officer.full_name} ({officer.badge_number})")
 
         # Sample Violations
         sample_data = [

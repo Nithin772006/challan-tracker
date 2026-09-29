@@ -47,10 +47,14 @@ def create_app(config_class=Config):
             return redirect(url_for('dashboard'))
 
         if request.method == 'POST':
-            username = request.form.get('username', '').strip()
+            login_id = request.form.get('username', '').strip()
             password = request.form.get('password', '')
 
-            officer = Officer.query.filter_by(username=username).first()
+            # Query by username or badge number
+            officer = Officer.query.filter(
+                (Officer.username == login_id.lower()) |
+                (Officer.badge_number == login_id.upper())
+            ).first()
 
             if officer and officer.check_password(password):
                 session['officer_id'] = officer.id
@@ -64,9 +68,63 @@ def create_app(config_class=Config):
                     return redirect(next_page)
                 return redirect(url_for('dashboard'))
             else:
-                flash('Invalid credentials. Please verify your badge/username and password.', 'danger')
+                flash('Invalid credentials. Please verify your badge number or username and password.', 'danger')
 
         return render_template('login.html')
+
+    @app.route('/register', methods=['GET', 'POST'])
+    def register():
+        if 'officer_id' in session:
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            full_name = request.form.get('full_name', '').strip()
+            badge_number = request.form.get('badge_number', '').strip().upper()
+            username = request.form.get('username', '').strip().lower()
+            password = request.form.get('password', '')
+            confirm_password = request.form.get('confirm_password', '')
+
+            errors = []
+            if not full_name:
+                errors.append('Officer full name is required.')
+            if not badge_number:
+                errors.append('Official badge number is required.')
+            if not username:
+                errors.append('Terminal username is required.')
+            elif len(username) < 3:
+                errors.append('Username must be at least 3 characters.')
+            if not password:
+                errors.append('Password is required.')
+            elif len(password) < 6:
+                errors.append('Password must be at least 6 characters.')
+            elif password != confirm_password:
+                errors.append('Passwords do not match.')
+
+            if not errors:
+                if Officer.query.filter_by(username=username).first():
+                    errors.append('This username is already registered. Please choose another.')
+                elif Officer.query.filter_by(badge_number=badge_number).first():
+                    errors.append('An officer with this badge number is already registered.')
+
+            if errors:
+                for err in errors:
+                    flash(err, 'danger')
+                return render_template('register.html', form_data=request.form)
+
+            new_officer = Officer(
+                full_name=full_name,
+                badge_number=badge_number,
+                username=username
+            )
+            new_officer.set_password(password)
+
+            db.session.add(new_officer)
+            db.session.commit()
+
+            flash('Officer account successfully created! You may now sign in.', 'success')
+            return redirect(url_for('login'))
+
+        return render_template('register.html', form_data=None)
 
     @app.route('/logout')
     def logout():
@@ -529,21 +587,10 @@ def create_app(config_class=Config):
     def internal_server_error(e):
         return render_template('500.html'), 500
 
-    # Auto-initialize database and default officer account
+    # Ensure database schema is initialized
     with app.app_context():
         db.create_all()
         print(f"[DATABASE] Connected to: {app.config.get('DB_ENGINE', app.config['SQLALCHEMY_DATABASE_URI'])}")
-        # Seed default officer if none exists
-        if Officer.query.count() == 0:
-            default_officer = Officer(
-                username='officer1',
-                full_name='Officer R. Sharma',
-                badge_number='TP-8492'
-            )
-            default_officer.set_password('password123')
-            db.session.add(default_officer)
-            db.session.commit()
-            print("[INFO] Initialized default officer: 'officer1' / 'password123'")
 
     return app
 
